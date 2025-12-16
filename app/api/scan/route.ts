@@ -3,6 +3,20 @@ import { type NextRequest, NextResponse } from "next/server"
 const VIRUSTOTAL_API_KEY = process.env.VIRUSTOTAL_API_KEY || ""
 const VIRUSTOTAL_API_URL = "https://www.virustotal.com/api/v3"
 
+async function parseJsonResponse(response: Response) {
+  const contentType = response.headers.get("content-type")
+  if (!contentType || !contentType.includes("application/json")) {
+    const text = await response.text()
+    throw new Error(`Invalid response from VirusTotal: ${text.substring(0, 200)}`)
+  }
+  try {
+    return await response.json()
+  } catch (error) {
+    const text = await response.text()
+    throw new Error(`Failed to parse JSON: ${text.substring(0, 200)}`)
+  }
+}
+
 async function waitForAnalysis(analysisId: string, maxRetries = 10): Promise<any> {
   for (let i = 0; i < maxRetries; i++) {
     const response = await fetch(`${VIRUSTOTAL_API_URL}/analyses/${analysisId}`, {
@@ -12,10 +26,11 @@ async function waitForAnalysis(analysisId: string, maxRetries = 10): Promise<any
     })
 
     if (!response.ok) {
-      throw new Error("Failed to get analysis from VirusTotal")
+      const text = await response.text()
+      throw new Error(`Failed to get analysis from VirusTotal: ${text}`)
     }
 
-    const data = await response.json()
+    const data = await parseJsonResponse(response)
     const status = data.data.attributes.status
 
     console.log(`[v0] Analysis status: ${status}, retry ${i + 1}/${maxRetries}`)
@@ -57,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     if (cachedResponse.ok) {
       console.log("[v0] Found cached results")
-      const cachedData = await cachedResponse.json()
+      const cachedData = await parseJsonResponse(cachedResponse)
       const stats = cachedData.data.attributes.last_analysis_stats
 
       console.log("[v0] Cached stats received:", JSON.stringify(stats))
@@ -104,7 +119,7 @@ export async function POST(request: NextRequest) {
       throw new Error("Failed to submit URL to VirusTotal")
     }
 
-    const submitData = await submitResponse.json()
+    const submitData = await parseJsonResponse(submitResponse)
     const analysisId = submitData.data.id
     console.log("[v0] Analysis ID:", analysisId)
 

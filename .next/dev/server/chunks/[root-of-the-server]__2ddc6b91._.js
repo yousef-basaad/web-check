@@ -52,6 +52,19 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$serv
 ;
 const VIRUSTOTAL_API_KEY = process.env.VIRUSTOTAL_API_KEY || "";
 const VIRUSTOTAL_API_URL = "https://www.virustotal.com/api/v3";
+async function parseJsonResponse(response) {
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        throw new Error(`Invalid response from VirusTotal: ${text.substring(0, 200)}`);
+    }
+    try {
+        return await response.json();
+    } catch (error) {
+        const text = await response.text();
+        throw new Error(`Failed to parse JSON: ${text.substring(0, 200)}`);
+    }
+}
 async function waitForAnalysis(analysisId, maxRetries = 10) {
     for(let i = 0; i < maxRetries; i++){
         const response = await fetch(`${VIRUSTOTAL_API_URL}/analyses/${analysisId}`, {
@@ -60,9 +73,10 @@ async function waitForAnalysis(analysisId, maxRetries = 10) {
             }
         });
         if (!response.ok) {
-            throw new Error("Failed to get analysis from VirusTotal");
+            const text = await response.text();
+            throw new Error(`Failed to get analysis from VirusTotal: ${text}`);
         }
-        const data = await response.json();
+        const data = await parseJsonResponse(response);
         const status = data.data.attributes.status;
         console.log(`[v0] Analysis status: ${status}, retry ${i + 1}/${maxRetries}`);
         // If completed, return the data
@@ -101,7 +115,7 @@ async function POST(request) {
         });
         if (cachedResponse.ok) {
             console.log("[v0] Found cached results");
-            const cachedData = await cachedResponse.json();
+            const cachedData = await parseJsonResponse(cachedResponse);
             const stats = cachedData.data.attributes.last_analysis_stats;
             console.log("[v0] Cached stats received:", JSON.stringify(stats));
             // VirusTotal returns these exact field names
@@ -139,7 +153,7 @@ async function POST(request) {
             console.error("[v0] Submit error:", errorText);
             throw new Error("Failed to submit URL to VirusTotal");
         }
-        const submitData = await submitResponse.json();
+        const submitData = await parseJsonResponse(submitResponse);
         const analysisId = submitData.data.id;
         console.log("[v0] Analysis ID:", analysisId);
         const analysisData = await waitForAnalysis(analysisId);
