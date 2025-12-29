@@ -14,7 +14,7 @@ interface ScanResult {
   permalink: string
 }
 
-// API endpoint - يتغير تلقائياً حسب البيئة
+// API endpoint - changes automatically based on environment
 const API_URL = "/api/scan"
 
 export default function Page() {
@@ -25,7 +25,7 @@ export default function Page() {
 
   const handleScan = async () => {
     if (!url.trim()) {
-      setError("الرجاء إدخال رابط")
+      setError("Please enter a link")
       return
     }
 
@@ -44,20 +44,20 @@ export default function Page() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || "فشل الفحص")
+        throw new Error(errorData.error || "Scan failed")
       }
 
       const data = await response.json()
       setResult(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "حدث خطأ أثناء الفحص")
+      setError(err instanceof Error ? err.message : "An error occurred during scanning")
       console.error(err)
     } finally {
       setLoading(false)
     }
   }
 
-  // تحديد اللون والأيقونة حسب النتيجة
+  // Determine color and icon based on result
   const getStatusConfig = () => {
     if (!result) return null
 
@@ -68,7 +68,7 @@ export default function Page() {
           color: "text-green-600",
           bg: "bg-green-50",
           border: "border-green-200",
-          label: "آمن",
+          label: "Safe",
         }
       case "suspicious":
         return {
@@ -76,7 +76,7 @@ export default function Page() {
           color: "text-yellow-600",
           bg: "bg-yellow-50",
           border: "border-yellow-200",
-          label: "مشبوه",
+          label: "Suspicious",
         }
       case "malicious":
         return {
@@ -84,7 +84,7 @@ export default function Page() {
           color: "text-red-600",
           bg: "bg-red-50",
           border: "border-red-200",
-          label: "خطير",
+          label: "Malicious",
         }
     }
   }
@@ -94,15 +94,14 @@ export default function Page() {
   return (
     <div
       className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 flex items-center justify-center"
-      dir="rtl"
     >
       <div className="w-full max-w-lg">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {/* Header */}
           <div className="text-center mb-8">
             <Shield className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">فحص الروابط</h1>
-            <p className="text-gray-600">تحقق من أمان الروابط باستخدام VirusTotal</p>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Link Scanner</h1>
+            <p className="text-gray-600">Check link safety using VirusTotal</p>
           </div>
 
           {/* Input Section */}
@@ -112,7 +111,7 @@ export default function Page() {
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="أدخل الرابط هنا..."
+                placeholder="Enter the link here..."
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
                 onKeyPress={(e) => e.key === "Enter" && handleScan()}
                 disabled={loading}
@@ -127,10 +126,10 @@ export default function Page() {
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  جاري الفحص...
+                  Scanning...
                 </>
               ) : (
-                "فحص الرابط"
+                "Scan Link"
               )}
             </button>
           </div>
@@ -152,19 +151,19 @@ export default function Page() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
                   <div className="text-2xl font-bold text-green-600">{result.stats.harmless}</div>
-                  <div className="text-sm text-gray-600">آمن</div>
+                  <div className="text-sm text-gray-600">Harmless</div>
                 </div>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
                   <div className="text-2xl font-bold text-yellow-600">{result.stats.suspicious}</div>
-                  <div className="text-sm text-gray-600">مشبوه</div>
+                  <div className="text-sm text-gray-600">Suspicious</div>
                 </div>
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
                   <div className="text-2xl font-bold text-red-600">{result.stats.malicious}</div>
-                  <div className="text-sm text-gray-600">خطير</div>
+                  <div className="text-sm text-gray-600">Malicious</div>
                 </div>
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
                   <div className="text-2xl font-bold text-gray-600">{result.stats.undetected}</div>
-                  <div className="text-sm text-gray-600">غير محدد</div>
+                  <div className="text-sm text-gray-600">Undetected</div>
                 </div>
               </div>
 
@@ -175,29 +174,10 @@ export default function Page() {
                 rel="noopener noreferrer"
                 className="block text-center text-blue-600 hover:text-blue-700 font-medium"
               >
-                عرض التفاصيل الكاملة على VirusTotal
+                View full details on VirusTotal
               </a>
             </div>
           )}
-        </div>
-
-        <div className="mt-6 bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-bold text-gray-800 mb-3">تعليمات التشغيل:</h3>
-          <ol className="space-y-2 text-sm text-gray-700">
-            <li className="flex gap-2">
-              <span className="font-bold text-blue-600">1.</span>
-              <span>أضف API Key من قسم Vars في الشريط الجانبي</span>
-            </li>
-            <li className="mr-6 bg-gray-50 p-2 rounded font-mono text-xs">VIRUSTOTAL_API_KEY</li>
-            <li className="flex gap-2">
-              <span className="font-bold text-blue-600">2.</span>
-              <span>احصل على API Key من: virustotal.com/gui/my-apikey</span>
-            </li>
-            <li className="flex gap-2">
-              <span className="font-bold text-blue-600">3.</span>
-              <span>أدخل رابط وابدأ الفحص!</span>
-            </li>
-          </ol>
         </div>
       </div>
     </div>
